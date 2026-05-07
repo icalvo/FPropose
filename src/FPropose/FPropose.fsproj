@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>FPropose</RootNamespace>
+    <AssemblyName>FPropose</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>Composable predicates for F# that evaluate to bool and explain outcomes on concrete values.</Description>
+    <Version>0.1.0</Version>
+    <PackageId>FPropose</PackageId>
+    <IsPackable>true</IsPackable>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Explain.fs" />
+    <Compile Include="Pred.fs" />
+  </ItemGroup>
+</Project>

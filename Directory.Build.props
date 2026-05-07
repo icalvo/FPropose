@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <Authors>FPropose contributors</Authors>
+    <Company>FPropose</Company>
+    <Product>FPropose</Product>
+    <Copyright>Copyright © 2026 FPropose contributors</Copyright>
+    <PackageProjectUrl>https://github.com/your-org/FPropose</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/your-org/FPropose</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>fsharp;predicate;explainable;boolean;composition</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarnOn>3390;$(WarnOn)</WarnOn>
+  </PropertyGroup>
+</Project>
