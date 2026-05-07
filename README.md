@@ -66,17 +66,14 @@ dotnet test
 
 In Cursor or VS Code, use **File → Open Folder** and select the `FPropose` directory (the folder that contains `FPropose.sln`).
 
-### Connect this repo to GitHub
+### Repository
 
-After you create an empty GitHub repository:
+Source lives at [github.com/icalvo/FPropose](https://github.com/icalvo/FPropose). If you cloned without a remote:
 
 ```bash
 git remote add origin https://github.com/icalvo/FPropose.git
-git branch -M main   # optional: rename default branch to main
-git push -u origin main
+git push -u origin master
 ```
-
-Update `PackageProjectUrl` and `RepositoryUrl` in `Directory.Build.props` to match your real URL before publishing.
 
 ### Project layout
 
