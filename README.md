@@ -50,7 +50,7 @@ else
 | `Pred.explain` | `PropositionResult` using lazy explanation. |
 | `Pred.explainWith ExplainMode.Eager` | Full sub-tree regardless of short-circuit. |
 | `Pred.explainText` | Same as explain, rendered as a string. |
-| `FPropose.Operators` | <code>.&&.</code>, <code>.&#124;&#124;.</code>, <code>~~~</code> |
+| `FPropose.Operators` | `.&&.`, `.\|\|.`, `~~~` |
 
 ## Developing locally
 
