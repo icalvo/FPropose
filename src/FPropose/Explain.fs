@@ -6,6 +6,10 @@ type ExplainTree =
     | Leaf of name: string * passed: bool * detail: string
     | All of passed: bool * items: ExplainTree list
     | Any of passed: bool * items: ExplainTree list
+    /// Every element of a sequence satisfied the inner predicate (`Pred.forAll`).
+    | ForAll of name: string * passed: bool * items: ExplainTree list
+    /// At least one element of a sequence satisfied the inner predicate (`Pred.exists`).
+    | Exists of name: string * passed: bool * items: ExplainTree list
     | Not of passed: bool * inner: ExplainTree
     | Skipped of name: string * reason: string
 
@@ -27,6 +31,24 @@ type ExplainTree =
             | Any(passed, items) ->
                 let mark = if passed then "✓" else "✗"
                 sb.AppendLine($"{pad}[{mark}] ANY") |> ignore
+
+                for item in items do
+                    write (depth + 1) sb item
+            | ForAll(name, passed, items) ->
+                let mark = if passed then "✓" else "✗"
+                sb.AppendLine($"{pad}[{mark}] FOR ALL {name}") |> ignore
+
+                if List.isEmpty items && passed then
+                    sb.AppendLine($"{pad}  (no elements — vacuously true.)") |> ignore
+
+                for item in items do
+                    write (depth + 1) sb item
+            | Exists(name, passed, items) ->
+                let mark = if passed then "✓" else "✗"
+                sb.AppendLine($"{pad}[{mark}] EXISTS {name}") |> ignore
+
+                if List.isEmpty items && not passed then
+                    sb.AppendLine($"{pad}  (no elements — vacuously false.)") |> ignore
 
                 for item in items do
                     write (depth + 1) sb item

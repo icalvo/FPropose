@@ -13,6 +13,20 @@ type Pred<'a> =
     | And of Pred<'a> * Pred<'a>
     | Or of Pred<'a> * Pred<'a>
     | Not of Pred<'a>
+    /// Universal quantification with nested inner explanations (see `Pred.forAll`).
+    /// Stored as closures so `Pred<'ctx>` can quantify over a distinct element type without GADTs.
+    | ForAll of
+        name: string *
+        evalForAll: ('a -> bool) *
+        explainLazyForAll: ('a -> bool * ExplainTree) *
+        explainEagerForAll: ('a -> bool * ExplainTree)
+    /// Existential quantification with nested inner explanations (see `Pred.exists`).
+    /// Stored as closures so `Pred<'ctx>` can quantify over a distinct element type without GADTs.
+    | Exists of
+        name: string *
+        evalExists: ('a -> bool) *
+        explainLazyExists: ('a -> bool * ExplainTree) *
+        explainEagerExists: ('a -> bool * ExplainTree)
 
 [<RequireQualifiedAccess>]
 module Pred =
@@ -64,6 +78,20 @@ module Pred =
             | And(l, r) -> And(go l, go r)
             | Or(l, r) -> Or(go l, go r)
             | Not inner -> Not(go inner)
+            | ForAll(n, ev, el, ee) ->
+                ForAll(
+                    n,
+                    (fun b -> ev (project b)),
+                    (fun b -> el (project b)),
+                    (fun b -> ee (project b))
+                )
+            | Exists(n, ev, el, ee) ->
+                Exists(
+                    n,
+                    (fun b -> ev (project b)),
+                    (fun b -> el (project b)),
+                    (fun b -> ee (project b))
+                )
 
         go p
 
@@ -74,6 +102,8 @@ module Pred =
         | And(l, r) -> eval l x && eval r x
         | Or(l, r) -> eval l x || eval r x
         | Not inner -> not (eval inner x)
+        | ForAll(_, evalForAll, _, _) -> evalForAll x
+        | Exists(_, evalExists, _, _) -> evalExists x
 
     let private leafNode name passed detail = ExplainTree.Leaf(name, passed, detail)
 
@@ -112,6 +142,8 @@ module Pred =
             let innerOk, innerTree = explainLazy inner x
             let ok = not innerOk
             ok, ExplainTree.Not(ok, innerTree)
+        | ForAll(_, _, explainLazyForAll, _) -> explainLazyForAll x
+        | Exists(_, _, explainLazyExists, _) -> explainLazyExists x
 
     let rec private explainEager (p: Pred<'a>) (x: 'a) : bool * ExplainTree =
         match p with
@@ -130,6 +162,96 @@ module Pred =
             let innerOk, innerTree = explainEager inner x
             let ok = not innerOk
             ok, ExplainTree.Not(ok, innerTree)
+        | ForAll(_, _, _, explainEagerForAll) -> explainEagerForAll x
+        | Exists(_, _, _, explainEagerExists) -> explainEagerExists x
+
+    /// Every element returned by `getItems` must satisfy `inner`.
+    /// Empty sequence is true (vacuous), matching `all []` on the empty conjunction.
+    /// Explanations nest: each element yields the same `ExplainTree` shape as `explain inner` on that element.
+    let forAll (name: string) (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+        let evalForAll (ctx: 'ctx) =
+            getItems ctx |> List.forall (fun item -> eval inner item)
+
+        let explainLazyForAll (ctx: 'ctx) =
+            match getItems ctx with
+            | [] -> true, ExplainTree.ForAll(name, true, [])
+            | items ->
+                let rec loop (itemIndex: int) (successRev: ExplainTree list) (remaining: 'item list) =
+                    match remaining with
+                    | [] -> true, ExplainTree.ForAll(name, true, List.rev successRev)
+                    | item :: rest ->
+                        let itemOk, itemTree = explainLazy inner item
+
+                        if not itemOk then
+                            let skipped =
+                                rest
+                                |> List.mapi (fun j _ ->
+                                    ExplainTree.Skipped(
+                                        $"item {itemIndex + j + 2}",
+                                        "Not evaluated because a previous item failed."
+                                    ))
+
+                            false,
+                            ExplainTree.ForAll(name, false, List.rev successRev @ [ itemTree ] @ skipped)
+                        else
+                            loop (itemIndex + 1) (itemTree :: successRev) rest
+
+                loop 0 [] items
+
+        let explainEagerForAll (ctx: 'ctx) =
+            match getItems ctx with
+            | [] -> true, ExplainTree.ForAll(name, true, [])
+            | items ->
+                let pairs = items |> List.map (fun item -> explainEager inner item)
+                let oks = pairs |> List.map fst
+                let trees = pairs |> List.map snd
+                List.forall id oks, ExplainTree.ForAll(name, List.forall id oks, trees)
+
+        ForAll(name, evalForAll, explainLazyForAll, explainEagerForAll)
+
+    /// At least one element returned by `getItems` must satisfy `inner`.
+    /// Empty sequence is false (none witness), matching `any []` on the empty disjunction.
+    /// Explanations nest: each evaluated element yields the same `ExplainTree` shape as `explain inner` on that element.
+    let exists (name: string) (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+        let evalExists (ctx: 'ctx) =
+            getItems ctx |> List.exists (fun item -> eval inner item)
+
+        let explainLazyExists (ctx: 'ctx) =
+            match getItems ctx with
+            | [] -> false, ExplainTree.Exists(name, false, [])
+            | items ->
+                let rec loop (itemIndex: int) (failRev: ExplainTree list) (remaining: 'item list) =
+                    match remaining with
+                    | [] -> false, ExplainTree.Exists(name, false, List.rev failRev)
+                    | item :: rest ->
+                        let itemOk, itemTree = explainLazy inner item
+
+                        if itemOk then
+                            let skipped =
+                                rest
+                                |> List.mapi (fun j _ ->
+                                    ExplainTree.Skipped(
+                                        $"item {itemIndex + j + 2}",
+                                        "Not evaluated because a previous item succeeded."
+                                    ))
+
+                            true,
+                            ExplainTree.Exists(name, true, List.rev failRev @ [ itemTree ] @ skipped)
+                        else
+                            loop (itemIndex + 1) (itemTree :: failRev) rest
+
+                loop 0 [] items
+
+        let explainEagerExists (ctx: 'ctx) =
+            match getItems ctx with
+            | [] -> false, ExplainTree.Exists(name, false, [])
+            | items ->
+                let pairs = items |> List.map (fun item -> explainEager inner item)
+                let oks = pairs |> List.map fst
+                let trees = pairs |> List.map snd
+                List.exists id oks, ExplainTree.Exists(name, List.exists id oks, trees)
+
+        Exists(name, evalExists, explainLazyExists, explainEagerExists)
 
     /// Evaluate and return both the boolean result and an explanation tree.
     let explainWith (mode: ExplainMode) (p: Pred<'a>) (x: 'a) : PropositionResult =
