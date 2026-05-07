@@ -48,7 +48,7 @@ else
 | `Pred.explain` | `PropositionResult` using lazy explanation. |
 | `Pred.explainWith ExplainMode.Eager` | Full sub-tree regardless of short-circuit. |
 | `Pred.explainText` | Same as explain, rendered as a string. |
-| `FPropose.Operators` | `.&&.`, `.||.`, `~~~` |
+| `FPropose.Operators` | <code>.&&.</code>, <code>.&#124;&#124;.</code>, <code>~~~</code> |
 
 ## Developing locally
 
@@ -77,8 +77,11 @@ git push -u origin master
 
 ### Project layout
 
+- `CHANGELOG.md` — release history ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/))
 - `src/FPropose` — library (`Explain.fs`, `Pred.fs`)
 - `tests/FPropose.Tests` — xUnit tests
+
+Agent releases: load the **deploy-release** skill (`.cursor/skills/deploy-release/SKILL.md`) for changelog → tag → GitHub Release → NuGet publish.
 
 ## Packaging locally
 
