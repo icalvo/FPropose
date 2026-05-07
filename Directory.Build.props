@@ -4,8 +4,8 @@
     <Company>FPropose</Company>
     <Product>FPropose</Product>
     <Copyright>Copyright © 2026 FPropose contributors</Copyright>
-    <PackageProjectUrl>https://github.com/your-org/FPropose</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/your-org/FPropose</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/icalvo/FPropose</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/icalvo/FPropose</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>fsharp;predicate;explainable;boolean;composition</PackageTags>

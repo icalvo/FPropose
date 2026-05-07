@@ -55,7 +55,7 @@ else
 Prerequisites: [.NET 8 SDK](https://dotnet.microsoft.com/download).
 
 ```bash
-git clone https://github.com/your-org/FPropose.git
+git clone https://github.com/icalvo/FPropose.git
 cd FPropose
 dotnet restore
 dotnet build
@@ -71,7 +71,7 @@ In Cursor or VS Code, use **File → Open Folder** and select the `FPropose` dir
 After you create an empty GitHub repository:
 
 ```bash
-git remote add origin https://github.com/your-org/FPropose.git
+git remote add origin https://github.com/icalvo/FPropose.git
 git branch -M main   # optional: rename default branch to main
 git push -u origin main
 ```
@@ -95,7 +95,7 @@ Outputs `.nupkg` (and symbols) under `./artifacts`.
 
 ### One-time setup
 
-1. Create a repository on GitHub (replace `your-org/FPropose` in `Directory.Build.props` and this README with your real URL).
+1. Use this repository (`icalvo/FPropose`); `Directory.Build.props` and this README already point at it.
 2. [Create an API key](https://www.nuget.org/account/apikeys) on NuGet.org with **Push** scope for package id `FPropose`.
 3. In the GitHub repo, add a secret named **`NUGET_API_KEY`** containing that key (**Settings → Secrets and variables → Actions**).
 
