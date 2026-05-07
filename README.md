@@ -66,6 +66,18 @@ dotnet test
 
 In Cursor or VS Code, use **File → Open Folder** and select the `FPropose` directory (the folder that contains `FPropose.sln`).
 
+### Connect this repo to GitHub
+
+After you create an empty GitHub repository:
+
+```bash
+git remote add origin https://github.com/your-org/FPropose.git
+git branch -M main   # optional: rename default branch to main
+git push -u origin main
+```
+
+Update `PackageProjectUrl` and `RepositoryUrl` in `Directory.Build.props` to match your real URL before publishing.
+
 ### Project layout
 
 - `src/FPropose` — library (`Explain.fs`, `Pred.fs`)
