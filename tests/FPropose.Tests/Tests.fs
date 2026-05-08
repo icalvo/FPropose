@@ -6,6 +6,41 @@ open FPropose.Operators
 
 type Person = { Name: string; Age: int }
 
+type Widget = { Tags: string list }
+
+[<Fact>]
+let ``leafMsg' formats without name prefix`` () =
+    let p =
+        Pred.leafMsg' (fun (s: string) -> s.Length > 0) (fun _ -> "non-empty") (fun _ -> "empty string")
+
+    let text = Pred.explainText ExplainMode.Lazy p ""
+
+    let lines =
+        text.Split([| '\r'; '\n' |], System.StringSplitOptions.RemoveEmptyEntries)
+
+    Assert.Equal("[X] empty string", lines[0])
+
+[<Fact>]
+let ``forAll' uses empty quantifier label in tree and format`` () =
+    let nonEmpty =
+        Pred.leafMsg' (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
+
+    let p = Pred.forAll' (fun w -> w.Tags) nonEmpty
+    let w = { Tags = [ "a"; "" ] }
+    let r = Pred.explain p w
+    Assert.False r.Passed
+
+    match r.Tree with
+    | ExplainTree.ForAll("", false, _) -> ()
+    | other -> Assert.Fail(sprintf "unexpected tree: %A" other)
+
+    let text = Pred.explainText ExplainMode.Lazy p w
+
+    let lines =
+        text.Split([| '\r'; '\n' |], System.StringSplitOptions.RemoveEmptyEntries)
+
+    Assert.Equal("[X] FOR ALL", lines[0])
+
 [<Fact>]
 let ``eval matches plain semantics for and or not`` () =
     let p =
@@ -77,8 +112,6 @@ let ``all and any`` () =
     Assert.False(Pred.eval (Pred.all nums) -1)
     Assert.False(Pred.eval (Pred.any []) 42)
     Assert.True(Pred.eval (Pred.all []) 42)
-
-type Widget = { Tags: string list }
 
 [<Fact>]
 let ``forAll empty list is vacuously true`` () =
