@@ -21,7 +21,11 @@ type ExplainTree =
             match node with
             | Leaf(name, passed, detail) ->
                 let mark = if passed then "✓" else "✗"
-                sb.AppendLine($"{pad}[{mark}] {name}: {detail}") |> ignore
+
+                if System.String.IsNullOrEmpty name then
+                    sb.AppendLine($"{pad}[{mark}] {detail}") |> ignore
+                else
+                    sb.AppendLine($"{pad}[{mark}] {name}: {detail}") |> ignore
             | All(passed, items) ->
                 let mark = if passed then "✓" else "✗"
                 sb.AppendLine($"{pad}[{mark}] ALL") |> ignore
@@ -36,7 +40,14 @@ type ExplainTree =
                     write (depth + 1) sb item
             | ForAll(name, passed, items) ->
                 let mark = if passed then "✓" else "✗"
-                sb.AppendLine($"{pad}[{mark}] FOR ALL {name}") |> ignore
+
+                let heading =
+                    if System.String.IsNullOrEmpty name then
+                        $"[{mark}] FOR ALL"
+                    else
+                        $"[{mark}] FOR ALL {name}"
+
+                sb.AppendLine($"{pad}{heading}") |> ignore
 
                 if List.isEmpty items && passed then
                     sb.AppendLine($"{pad}  (no elements — vacuously true.)") |> ignore
@@ -45,7 +56,14 @@ type ExplainTree =
                     write (depth + 1) sb item
             | Exists(name, passed, items) ->
                 let mark = if passed then "✓" else "✗"
-                sb.AppendLine($"{pad}[{mark}] EXISTS {name}") |> ignore
+
+                let heading =
+                    if System.String.IsNullOrEmpty name then
+                        $"[{mark}] EXISTS"
+                    else
+                        $"[{mark}] EXISTS {name}"
+
+                sb.AppendLine($"{pad}{heading}") |> ignore
 
                 if List.isEmpty items && not passed then
                     sb.AppendLine($"{pad}  (no elements — vacuously false.)") |> ignore

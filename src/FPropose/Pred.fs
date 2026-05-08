@@ -43,9 +43,17 @@ module Pred =
     let leaf (name: string) (test: 'a -> bool) (explain: 'a -> bool -> string) : Pred<'a> =
         Leaf(name, test, explain)
 
+    /// Atomic test like `leaf`, but with no separate display name (explanation text only in formatted output).
+    let leaf' (test: 'a -> bool) (explain: 'a -> bool -> string) : Pred<'a> =
+        Leaf("", test, explain)
+
     /// Convenience when you want separate messages for success and failure.
     let leafMsg (name: string) (test: 'a -> bool) (onTrue: 'a -> string) (onFalse: 'a -> string) : Pred<'a> =
         Leaf(name, test, (fun x ok -> if ok then onTrue x else onFalse x))
+
+    /// Like `leafMsg`, but with no separate display name (explanation text only in formatted output).
+    let leafMsg' (test: 'a -> bool) (onTrue: 'a -> string) (onFalse: 'a -> string) : Pred<'a> =
+        Leaf("", test, (fun x ok -> if ok then onTrue x else onFalse x))
 
     let conj (left: Pred<'a>) (right: Pred<'a>) : Pred<'a> = And(left, right)
     let disj (left: Pred<'a>) (right: Pred<'a>) : Pred<'a> = Or(left, right)
@@ -209,6 +217,10 @@ module Pred =
 
         ForAll(name, evalForAll, explainLazyForAll, explainEagerForAll)
 
+    /// Like `forAll`, but with no separate quantifier label in formatted output.
+    let forAll' (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+        forAll "" getItems inner
+
     /// At least one element returned by `getItems` must satisfy `inner`.
     /// Empty sequence is false (none witness), matching `any []` on the empty disjunction.
     /// Explanations nest: each evaluated element yields the same `ExplainTree` shape as `explain inner` on that element.
@@ -252,6 +264,10 @@ module Pred =
                 List.exists id oks, ExplainTree.Exists(name, List.exists id oks, trees)
 
         Exists(name, evalExists, explainLazyExists, explainEagerExists)
+
+    /// Like `exists`, but with no separate quantifier label in formatted output.
+    let exists' (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+        exists "" getItems inner
 
     /// Evaluate and return both the boolean result and an explanation tree.
     let explainWith (mode: ExplainMode) (p: Pred<'a>) (x: 'a) : PropositionResult =

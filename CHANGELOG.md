@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Alternate builders without a display name: `Pred.leaf'`, `Pred.leafMsg'`, `Pred.forAll'`, `Pred.exists'`. `ExplainTree.Format()` omits the `name:` prefix for leaves and drops the quantifier label when the name is empty.
+
 ## [1.0.0] - 2026-05-07
 
 ### Added
