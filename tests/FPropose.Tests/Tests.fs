@@ -18,7 +18,7 @@ let ``leafMsg' formats without name prefix`` () =
     let lines =
         text.Split([| '\r'; '\n' |], System.StringSplitOptions.RemoveEmptyEntries)
 
-    Assert.Equal("[✗] empty string", lines[0])
+    Assert.Equal("[X] empty string", lines[0])
 
 [<Fact>]
 let ``forAll' uses empty quantifier label in tree and format`` () =
@@ -39,7 +39,7 @@ let ``forAll' uses empty quantifier label in tree and format`` () =
     let lines =
         text.Split([| '\r'; '\n' |], System.StringSplitOptions.RemoveEmptyEntries)
 
-    Assert.Equal("[✗] FOR ALL", lines[0])
+    Assert.Equal("[X] FOR ALL", lines[0])
 
 [<Fact>]
 let ``eval matches plain semantics for and or not`` () =

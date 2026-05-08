@@ -20,26 +20,26 @@ type ExplainTree =
 
             match node with
             | Leaf(name, passed, detail) ->
-                let mark = if passed then "✓" else "✗"
+                let mark = if passed then "✓" else "X"
 
                 if System.String.IsNullOrEmpty name then
                     sb.AppendLine($"{pad}[{mark}] {detail}") |> ignore
                 else
                     sb.AppendLine($"{pad}[{mark}] {name}: {detail}") |> ignore
             | All(passed, items) ->
-                let mark = if passed then "✓" else "✗"
+                let mark = if passed then "✓" else "X"
                 sb.AppendLine($"{pad}[{mark}] ALL") |> ignore
 
                 for item in items do
                     write (depth + 1) sb item
             | Any(passed, items) ->
-                let mark = if passed then "✓" else "✗"
+                let mark = if passed then "✓" else "X"
                 sb.AppendLine($"{pad}[{mark}] ANY") |> ignore
 
                 for item in items do
                     write (depth + 1) sb item
             | ForAll(name, passed, items) ->
-                let mark = if passed then "✓" else "✗"
+                let mark = if passed then "✓" else "X"
 
                 let heading =
                     if System.String.IsNullOrEmpty name then
@@ -55,7 +55,7 @@ type ExplainTree =
                 for item in items do
                     write (depth + 1) sb item
             | Exists(name, passed, items) ->
-                let mark = if passed then "✓" else "✗"
+                let mark = if passed then "✓" else "X"
 
                 let heading =
                     if System.String.IsNullOrEmpty name then
@@ -71,7 +71,7 @@ type ExplainTree =
                 for item in items do
                     write (depth + 1) sb item
             | Not(passed, inner) ->
-                let mark = if passed then "✓" else "✗"
+                let mark = if passed then "✓" else "X"
                 sb.AppendLine($"{pad}[{mark}] NOT") |> ignore
                 write (depth + 1) sb inner
             | Skipped(name, reason) ->
