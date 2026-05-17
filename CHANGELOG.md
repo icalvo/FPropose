@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `Pred.forAll`, `Pred.forAll'`, `Pred.exists`, and `Pred.exists'` take `getItems : 'ctx -> #seq<'item>` so lists, arrays, and other sequences work without conversion.
+
 ## [1.1.0] - 2026-05-08
 
 ### Changed

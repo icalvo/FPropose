@@ -173,43 +173,85 @@ module Pred =
         | ForAll(_, _, _, explainEagerForAll) -> explainEagerForAll x
         | Exists(_, _, _, explainEagerExists) -> explainEagerExists x
 
+    let private skippedItemsFromEnumerator (startItemNumber: int) (message: string) (e: System.Collections.Generic.IEnumerator<_>) =
+        let skipped = ResizeArray()
+        let mutable j = 0
+
+        while e.MoveNext() do
+            skipped.Add(ExplainTree.Skipped($"item {startItemNumber + j}", message))
+            j <- j + 1
+
+        Seq.toList skipped
+
+    let private explainLazyForAllItems (name: string) (inner: Pred<'item>) (items: seq<'item>) : bool * ExplainTree =
+        use e = items.GetEnumerator()
+
+        let rec loop (itemIndex: int) (successRev: ExplainTree list) =
+            if not (e.MoveNext()) then
+                true, ExplainTree.ForAll(name, true, List.rev successRev)
+            else
+                let item = e.Current
+                let itemOk, itemTree = explainLazy inner item
+
+                if not itemOk then
+                    let skipped =
+                        skippedItemsFromEnumerator
+                            (itemIndex + 2)
+                            "Not evaluated because a previous item failed."
+                            e
+
+                    false,
+                    ExplainTree.ForAll(name, false, List.rev successRev @ [ itemTree ] @ skipped)
+                else
+                    loop (itemIndex + 1) (itemTree :: successRev)
+
+        loop 0 []
+
+    let private explainLazyExistsItems (name: string) (inner: Pred<'item>) (items: seq<'item>) : bool * ExplainTree =
+        use e = items.GetEnumerator()
+
+        let rec loop (itemIndex: int) (failRev: ExplainTree list) =
+            if not (e.MoveNext()) then
+                false, ExplainTree.Exists(name, false, List.rev failRev)
+            else
+                let item = e.Current
+                let itemOk, itemTree = explainLazy inner item
+
+                if itemOk then
+                    let skipped =
+                        skippedItemsFromEnumerator
+                            (itemIndex + 2)
+                            "Not evaluated because a previous item succeeded."
+                            e
+
+                    true,
+                    ExplainTree.Exists(name, true, List.rev failRev @ [ itemTree ] @ skipped)
+                else
+                    loop (itemIndex + 1) (itemTree :: failRev)
+
+        loop 0 []
+
     /// Every element returned by `getItems` must satisfy `inner`.
     /// Empty sequence is true (vacuous), matching `all []` on the empty conjunction.
     /// Explanations nest: each element yields the same `ExplainTree` shape as `explain inner` on that element.
-    let forAll (name: string) (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+    let forAll (name: string) (getItems: 'ctx -> #seq<'item>) (inner: Pred<'item>) : Pred<'ctx> =
         let evalForAll (ctx: 'ctx) =
-            getItems ctx |> List.forall (fun item -> eval inner item)
+            getItems ctx |> Seq.forall (fun item -> eval inner item)
 
         let explainLazyForAll (ctx: 'ctx) =
-            match getItems ctx with
-            | [] -> true, ExplainTree.ForAll(name, true, [])
-            | items ->
-                let rec loop (itemIndex: int) (successRev: ExplainTree list) (remaining: 'item list) =
-                    match remaining with
-                    | [] -> true, ExplainTree.ForAll(name, true, List.rev successRev)
-                    | item :: rest ->
-                        let itemOk, itemTree = explainLazy inner item
+            let items = getItems ctx
 
-                        if not itemOk then
-                            let skipped =
-                                rest
-                                |> List.mapi (fun j _ ->
-                                    ExplainTree.Skipped(
-                                        $"item {itemIndex + j + 2}",
-                                        "Not evaluated because a previous item failed."
-                                    ))
-
-                            false,
-                            ExplainTree.ForAll(name, false, List.rev successRev @ [ itemTree ] @ skipped)
-                        else
-                            loop (itemIndex + 1) (itemTree :: successRev) rest
-
-                loop 0 [] items
+            if Seq.isEmpty items then
+                true, ExplainTree.ForAll(name, true, [])
+            else
+                explainLazyForAllItems name inner items
 
         let explainEagerForAll (ctx: 'ctx) =
-            match getItems ctx with
+            let items = getItems ctx |> Seq.toList
+
+            match items with
             | [] -> true, ExplainTree.ForAll(name, true, [])
-            | items ->
+            | _ ->
                 let pairs = items |> List.map (fun item -> explainEager inner item)
                 let oks = pairs |> List.map fst
                 let trees = pairs |> List.map snd
@@ -218,46 +260,30 @@ module Pred =
         ForAll(name, evalForAll, explainLazyForAll, explainEagerForAll)
 
     /// Like `forAll`, but with no separate quantifier label in formatted output.
-    let forAll' (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+    let forAll' (getItems: 'ctx -> #seq<'item>) (inner: Pred<'item>) : Pred<'ctx> =
         forAll "" getItems inner
 
     /// At least one element returned by `getItems` must satisfy `inner`.
     /// Empty sequence is false (none witness), matching `any []` on the empty disjunction.
     /// Explanations nest: each evaluated element yields the same `ExplainTree` shape as `explain inner` on that element.
-    let exists (name: string) (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+    let exists (name: string) (getItems: 'ctx -> #seq<'item>) (inner: Pred<'item>) : Pred<'ctx> =
         let evalExists (ctx: 'ctx) =
-            getItems ctx |> List.exists (fun item -> eval inner item)
+            getItems ctx |> Seq.exists (fun item -> eval inner item)
 
         let explainLazyExists (ctx: 'ctx) =
-            match getItems ctx with
-            | [] -> false, ExplainTree.Exists(name, false, [])
-            | items ->
-                let rec loop (itemIndex: int) (failRev: ExplainTree list) (remaining: 'item list) =
-                    match remaining with
-                    | [] -> false, ExplainTree.Exists(name, false, List.rev failRev)
-                    | item :: rest ->
-                        let itemOk, itemTree = explainLazy inner item
+            let items = getItems ctx
 
-                        if itemOk then
-                            let skipped =
-                                rest
-                                |> List.mapi (fun j _ ->
-                                    ExplainTree.Skipped(
-                                        $"item {itemIndex + j + 2}",
-                                        "Not evaluated because a previous item succeeded."
-                                    ))
-
-                            true,
-                            ExplainTree.Exists(name, true, List.rev failRev @ [ itemTree ] @ skipped)
-                        else
-                            loop (itemIndex + 1) (itemTree :: failRev) rest
-
-                loop 0 [] items
+            if Seq.isEmpty items then
+                false, ExplainTree.Exists(name, false, [])
+            else
+                explainLazyExistsItems name inner items
 
         let explainEagerExists (ctx: 'ctx) =
-            match getItems ctx with
+            let items = getItems ctx |> Seq.toList
+
+            match items with
             | [] -> false, ExplainTree.Exists(name, false, [])
-            | items ->
+            | _ ->
                 let pairs = items |> List.map (fun item -> explainEager inner item)
                 let oks = pairs |> List.map fst
                 let trees = pairs |> List.map snd
@@ -266,7 +292,7 @@ module Pred =
         Exists(name, evalExists, explainLazyExists, explainEagerExists)
 
     /// Like `exists`, but with no separate quantifier label in formatted output.
-    let exists' (getItems: 'ctx -> 'item list) (inner: Pred<'item>) : Pred<'ctx> =
+    let exists' (getItems: 'ctx -> #seq<'item>) (inner: Pred<'item>) : Pred<'ctx> =
         exists "" getItems inner
 
     /// Evaluate and return both the boolean result and an explanation tree.

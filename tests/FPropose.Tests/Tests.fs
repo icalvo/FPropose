@@ -25,8 +25,8 @@ let ``forAll' uses empty quantifier label in tree and format`` () =
     let nonEmpty =
         Pred.leafMsg' (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
 
-    let p = Pred.forAll' (fun w -> w.Tags) nonEmpty
-    let w = { Tags = [ "a"; "" ] }
+    let p = Pred.forAll' (fun (w: Widget) -> w.Tags) nonEmpty
+    let w: Widget = { Tags = [ "a"; "" ] }
     let r = Pred.explain p w
     Assert.False r.Passed
 
@@ -118,8 +118,8 @@ let ``forAll empty list is vacuously true`` () =
     let nonEmpty =
         Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
 
-    let p = Pred.forAll "tags" (fun w -> w.Tags) nonEmpty
-    let w = { Tags = [] }
+    let p = Pred.forAll "tags" (fun (w: Widget) -> w.Tags) nonEmpty
+    let w: Widget = { Tags = [] }
     Assert.True(Pred.eval p w)
 
     let r = Pred.explain p w
@@ -133,7 +133,7 @@ let ``forAll eval matches forall on items`` () =
     let nonEmpty =
         Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
 
-    let p = Pred.forAll "tags" (fun w -> w.Tags) nonEmpty
+    let p = Pred.forAll "tags" (fun (w: Widget) -> w.Tags) nonEmpty
     Assert.True(Pred.eval p { Tags = [ "a"; "b" ] })
     Assert.False(Pred.eval p { Tags = [ "a"; "" ] })
 
@@ -142,8 +142,8 @@ let ``forAll lazy explain skips inner after first failure`` () =
     let nonEmpty =
         Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
 
-    let p = Pred.forAll "tags" (fun w -> w.Tags) nonEmpty
-    let w = { Tags = [ "ok"; ""; "never" ] }
+    let p = Pred.forAll "tags" (fun (w: Widget) -> w.Tags) nonEmpty
+    let w: Widget = { Tags = [ "ok"; ""; "never" ] }
     let r = Pred.explain p w
     Assert.False r.Passed
 
@@ -169,8 +169,8 @@ let ``forAll eager explain evaluates every item`` () =
             (fun _ -> "ok")
             (fun _ -> "empty")
 
-    let p = Pred.forAll "tags" (fun w -> w.Tags) (mark "inner")
-    let w = { Tags = [ "a"; ""; "c" ] }
+    let p = Pred.forAll "tags" (fun (w: Widget) -> w.Tags) (mark "inner")
+    let w: Widget = { Tags = [ "a"; ""; "c" ] }
     let r = Pred.explainWith ExplainMode.Eager p w
     Assert.False r.Passed
     Assert.Equal(3, seen.Count)
@@ -191,8 +191,8 @@ let ``exists empty list is vacuously false`` () =
     let nonEmpty =
         Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
 
-    let p = Pred.exists "tags" (fun w -> w.Tags) nonEmpty
-    let w = { Tags = [] }
+    let p = Pred.exists "tags" (fun (w: Widget) -> w.Tags) nonEmpty
+    let w: Widget = { Tags = [] }
     Assert.False(Pred.eval p w)
 
     let r = Pred.explain p w
@@ -206,7 +206,7 @@ let ``exists eval matches exists on items`` () =
     let nonEmpty =
         Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
 
-    let p = Pred.exists "tags" (fun w -> w.Tags) nonEmpty
+    let p = Pred.exists "tags" (fun (w: Widget) -> w.Tags) nonEmpty
     Assert.True(Pred.eval p { Tags = [ ""; "a" ] })
     Assert.False(Pred.eval p { Tags = [ ""; "" ] })
 
@@ -215,8 +215,8 @@ let ``exists lazy explain skips inner after first success`` () =
     let nonEmpty =
         Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
 
-    let p = Pred.exists "tags" (fun w -> w.Tags) nonEmpty
-    let w = { Tags = [ ""; "ok"; "never" ] }
+    let p = Pred.exists "tags" (fun (w: Widget) -> w.Tags) nonEmpty
+    let w: Widget = { Tags = [ ""; "ok"; "never" ] }
     let r = Pred.explain p w
     Assert.True r.Passed
 
@@ -231,6 +231,26 @@ let ``exists lazy explain skips inner after first success`` () =
         Assert.Fail(sprintf "unexpected tree: %A" other)
 
 [<Fact>]
+let ``forAll accepts array sequence without list allocation`` () =
+    let nonEmpty =
+        Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
+
+    let p = Pred.forAll "tags" (fun (w: {| Tags: string[] |}) -> w.Tags) nonEmpty
+    Assert.True(Pred.eval p {| Tags = [| "a"; "b" |] |})
+    Assert.False(Pred.eval p {| Tags = [| "a"; "" |] |})
+
+[<Fact>]
+let ``exists accepts seq expression`` () =
+    let nonEmpty =
+        Pred.leafMsg "nonEmpty" (fun (s: string) -> s.Length > 0) (fun _ -> "ok") (fun _ -> "empty")
+
+    let p =
+        Pred.exists "tags" (fun (w: Widget) -> seq { for t in w.Tags -> t }) nonEmpty
+
+    Assert.True(Pred.eval p { Tags = [ ""; "a" ] })
+    Assert.False(Pred.eval p { Tags = [] })
+
+[<Fact>]
 let ``exists eager explain evaluates every item`` () =
     let seen = System.Collections.Generic.List<string>()
 
@@ -242,8 +262,8 @@ let ``exists eager explain evaluates every item`` () =
             (fun _ -> "ok")
             (fun _ -> "empty")
 
-    let p = Pred.exists "tags" (fun w -> w.Tags) mark
-    let w = { Tags = [ ""; ""; "c" ] }
+    let p = Pred.exists "tags" (fun (w: Widget) -> w.Tags) mark
+    let w: Widget = { Tags = [ ""; ""; "c" ] }
     let r = Pred.explainWith ExplainMode.Eager p w
     Assert.True r.Passed
     Assert.Equal(3, seen.Count)

@@ -45,9 +45,9 @@ else
 | `Pred.leafMsg' test onTrue onFalse` | Same as `leafMsg`, without a separate display name. |
 | `Pred.conj` / `Pred.disj` / `Pred.neg` | AND, OR, NOT. |
 | `Pred.all` / `Pred.any` | Fold over lists (`all []` is always true; `any []` always false). |
-| `Pred.forAll name getItems inner` | Every element from `getItems` must satisfy `inner`; nested explanations per item (empty list is vacuously true). |
+| `Pred.forAll name getItems inner` | Every element from `getItems` must satisfy `inner`; nested explanations per item (empty sequence is vacuously true). |
 | `Pred.forAll' getItems inner` | Same as `forAll`, without a separate quantifier label in formatted output. |
-| `Pred.exists name getItems inner` | At least one element from `getItems` must satisfy `inner`; nested explanations per item (empty list is vacuously false). |
+| `Pred.exists name getItems inner` | At least one element from `getItems` must satisfy `inner`; nested explanations per item (empty sequence is vacuously false). |
 | `Pred.exists' getItems inner` | Same as `exists`, without a separate quantifier label in formatted output. |
 | `Pred.contramap` | Focus a predicate on part of a larger value. |
 | `Pred.eval` | Boolean result with standard short-circuiting for AND and OR. |
